@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Python Poll</title>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: 50px auto; text-align: center; }
+        .poll-option { 
+            border: 1px solid #ddd; padding: 15px; margin: 10px; 
+            border-radius: 8px; display: flex; justify-content: space-between; 
+        }
+        button { cursor: pointer; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        .count { font-weight: bold; font-size: 1.2em; color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Favorite Language?</h1>
+    <p>Vote and watch the results update live for everyone</p>
+
+    <div id="poll-container">
+        {% for language, count in votes.items() %}
+        <div class="poll-option">
+            <span>{{ language }}</span>
+            <div>
+                <span class="count" id="count-{{ language }}">{{ count }}</span>
+                <button onclick="sendVote('{{ language }}')">Vote</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        // Connect to the WebSocket
+        // Note: 'window.location.host' makes this work locally or on a server
+        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+        ws.onmessage = function(event) {
+            // Parse the JSON sent from Python
+            const data = JSON.parse(event.data);
+            
+            // Find the right element and update its text
+            const countElement = document.getElementById(`count-${data.language}`);
+            if (countElement) {
+                countElement.innerText = data.votes;
+            }
+        };
+
+        function sendVote(language) {
+            // Send the language string to the server
+            ws.send(language);
+        }
+
+        // Optional: Reconnect logic if the server restarts
+        ws.onclose = function() {
+            console.log("WebSocket closed. Refresh to reconnect.");
+        };
+    </script>
+</body>
+</html>
